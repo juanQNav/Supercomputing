@@ -1,0 +1,11 @@
+# executable files c
+*
+!*.*
+!*/
+# vscode
+*.vscode/
+# docs
+*.pdf
+*.txt
+*.md
+
