@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
 
 #define N_VERTICES 7
 #define INF 99999
@@ -155,16 +157,54 @@ int main(){
     {0, 0, 0, 0, 2, 6, 0}, // 6
   };
 
+  clock_t start, end;
+  double cpu_time_used;
+
+  start = clock();
+
   nombra_vertices(&g, N_VERTICES);
   introduce_matriz(&g, N_VERTICES, m);
   print_grafo(&g, N_VERTICES);
 
   int origen = 0;
+  int destino = 6;
   dijkstra(&g, origen, N_VERTICES);
 
-  printf("Camino más corto desde el origen %d al nodo %d:\n", origen, 6);
-  imprimir_camino(6);
-  printf("\nDistancia total: %d\n", distancia[6]);
+  printf("Camino más corto desde el origen %d al nodo %d:\n", origen, destino);
+  imprimir_camino(destino);
+  printf("\nDistancia total: %d\n", distancia[destino]);
+
+  end = clock();
+  cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+
+  int file_exists = access("resultados.csv", F_OK) == 0;
+
+  FILE *csv_file = fopen("resultados.csv", file_exists ? "a" : "w");
+    if (csv_file == NULL) {
+        perror("Error al abrir el archivo CSV");
+        return 1;
+    }
+
+    if (!file_exists) {
+        fprintf(csv_file, "Nodos,Origen,Destino,Distancia,Tiempo(s),Camino\n");
+    }
+
+  fprintf(csv_file, "%d,%d,%d,%d,%.6f,\"", N_VERTICES, origen, destino, distancia[destino], cpu_time_used);
+
+  int camino[N_VERTICES];
+  int count = 0;
+  for (int i = destino; i != -1; i = anterior[i]) {
+    camino[count++] = i;
+  }
+  for (int i = count - 1; i >= 0; i--) {
+    fprintf(csv_file, "%d", camino[i]);
+    if (i > 0) fprintf(csv_file, " -> ");
+  }
+
+  fprintf(csv_file, "\"\n");
+  fclose(csv_file);
+
+  printf("\nResultados exportados a 'resultados.csv'\n");
 
   exportar_grafo_dot(&g, N_VERTICES, "grafo.dot");
   printf("\nGrafo exportado a 'grafo.dot'. Usa Graphviz para visualizarlo.\n");
