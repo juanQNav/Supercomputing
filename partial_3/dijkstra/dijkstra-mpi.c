@@ -4,9 +4,11 @@
 #include <time.h>
 #include <unistd.h>
 
-#define N_VERTICES 7
+#define N_VERTICES 300
 #define INF 99999
-#define NAME_LEN 1
+#define NAME_LEN 2
+#define MAX_WEIGHT 11
+#define SEED 42
 
 typedef struct {
     int id;
@@ -18,10 +20,27 @@ typedef struct {
     int matriz_adyacencia[N_VERTICES][N_VERTICES];
 } Grafo;
 
-void nombra_vertices(Grafo *g, int num_vertices) {
-    for (int i = 0; i < num_vertices; i++) {
-        g->vertices[i].id = i;
-        snprintf(g->vertices[i].nombre, 20, "%d", i);
+void nombra_vertices(Grafo *g, int num_vertices){
+  for(int i = 0; i < num_vertices; i++){
+    g->vertices[i].id = i;
+
+    for (int j = 0; j < NAME_LEN; j++){
+      g->vertices[i].nombre[j] = '0' + i;
+    }
+    g->vertices[i].nombre[NAME_LEN] = '\0';
+  }
+}
+
+void llena_matriz_a(Grafo *g, int num_vertices){
+    srand(SEED);
+    for(int i = 0; i < num_vertices; i++){
+        for(int j = 0; j < num_vertices; j++){
+        if(i == j){
+            g->matriz_adyacencia[i][j] = 0;
+        } else {
+            g->matriz_adyacencia[i][j] = rand() % MAX_WEIGHT;
+        }
+        }
     }
 }
 
@@ -33,9 +52,9 @@ void introduce_matriz(Grafo *g, int num_vertices, int matriz[N_VERTICES][N_VERTI
     }
 }
 
-void print_grafo(Grafo *g, int num_vertices) {
+void print_grafo(Grafo *g, int num_vertices){
     printf("Grafo: \n");
-    for (int i = 0; i < num_vertices; i++) {
+    for(int i = 0; i < num_vertices; i++){
         printf("V %d: %s\n", g->vertices[i].id, g->vertices[i].nombre);
     }
 
@@ -221,7 +240,7 @@ int main(int argc, char **argv) {
 
     Grafo g;
     int origen = 0;
-    int destino = 6;
+    int destino = 2;
 
     int remainder = N_VERTICES % numProc;
     int padding = (remainder == 0) ? 0 : numProc - remainder;
@@ -240,18 +259,19 @@ int main(int argc, char **argv) {
     clock_t start, end;
     double cpu_time_used;
     if (idProc == 0) {
-        int m[N_VERTICES][N_VERTICES] = {
-            {0, 2, 6, 0, 0, 0, 0},
-            {2, 0, 0, 5, 0, 0, 0},
-            {6, 0, 0, 8, 0, 0, 0},
-            {0, 5, 8, 0, 10, 15, 0},
-            {0, 0, 0, 10, 0, 6, 2},
-            {0, 0, 0, 15, 6, 0, 6},
-            {0, 0, 0, 0, 2, 6, 0}
-        };
+        // int m[N_VERTICES][N_VERTICES] = {
+        //     {0, 2, 6, 0, 0, 0, 0},
+        //     {2, 0, 0, 5, 0, 0, 0},
+        //     {6, 0, 0, 8, 0, 0, 0},
+        //     {0, 5, 8, 0, 10, 15, 0},
+        //     {0, 0, 0, 10, 0, 6, 2},
+        //     {0, 0, 0, 15, 6, 0, 6},
+        //     {0, 0, 0, 0, 2, 6, 0}
+        // };
 
         nombra_vertices(&g, N_VERTICES);
-        introduce_matriz(&g, N_VERTICES, m);
+        llena_matriz_a(&g, N_VERTICES);
+        // introduce_matriz(&g, N_VERTICES, m);
         print_grafo(&g, N_VERTICES);
 
         start = clock();
