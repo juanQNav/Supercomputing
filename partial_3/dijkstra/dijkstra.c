@@ -3,10 +3,11 @@
 #include <time.h>
 #include <unistd.h>
 
-#define N_VERTICES 7
+#define N_VERTICES 300
 #define INF 99999
-#define NAME_LEN 1
+#define NAME_LEN 2
 #define MAX_WEIGHT 11
+#define SEED 42
 
 typedef struct {
   int id;
@@ -30,6 +31,7 @@ void nombra_vertices(Grafo *g, int num_vertices){
 }
 
 void llena_matriz_a(Grafo *g, int num_vertices){
+  srand(SEED);
   for(int i = 0; i < num_vertices; i++){
     for(int j = 0; j < num_vertices; j++){
       if(i == j){
@@ -147,15 +149,15 @@ void exportar_grafo_dot(Grafo* g, int num_vertices, const char* filename) {
 int main(){
   Grafo g;
 
-  int m[N_VERTICES][N_VERTICES] = {
-    {0, 2, 6, 0, 0, 0, 0}, // 0
-    {2, 0, 0, 5, 0, 0, 0}, // 1
-    {6, 0, 0, 8, 0, 0, 0}, // 2
-    {0, 5, 8, 0, 10, 15, 0}, // 3
-    {0, 0, 0, 10, 0, 6, 2}, // 4
-    {0, 0, 0, 15, 6, 0, 6}, // 5
-    {0, 0, 0, 0, 2, 6, 0}, // 6
-  };
+  // int m[N_VERTICES][N_VERTICES] = {
+  //   {0, 2, 6, 0, 0, 0, 0}, // 0
+  //   {2, 0, 0, 5, 0, 0, 0}, // 1
+  //   {6, 0, 0, 8, 0, 0, 0}, // 2
+  //   {0, 5, 8, 0, 10, 15, 0}, // 3
+  //   {0, 0, 0, 10, 0, 6, 2}, // 4
+  //   {0, 0, 0, 15, 6, 0, 6}, // 5
+  //   {0, 0, 0, 0, 2, 6, 0}, // 6
+  // };
 
   clock_t start, end;
   double cpu_time_used;
@@ -163,11 +165,12 @@ int main(){
   start = clock();
 
   nombra_vertices(&g, N_VERTICES);
-  introduce_matriz(&g, N_VERTICES, m);
+  llena_matriz_a(&g, N_VERTICES);
+  // introduce_matriz(&g, N_VERTICES, m);
   print_grafo(&g, N_VERTICES);
 
   int origen = 0;
-  int destino = 6;
+  int destino = 2;
   dijkstra(&g, origen, N_VERTICES);
 
   printf("Camino más corto desde el origen %d al nodo %d:\n", origen, destino);
@@ -206,7 +209,12 @@ int main(){
 
   printf("\nResultados exportados a 'resultados.csv'\n");
 
-  exportar_grafo_dot(&g, N_VERTICES, "grafo.dot");
-  printf("\nGrafo exportado a 'grafo.dot'. Usa Graphviz para visualizarlo.\n");
+  if (N_VERTICES < 10) {
+    exportar_grafo_dot(&g, N_VERTICES, "grafo.dot");
+    printf("\nGrafo exportado a 'grafo.dot'. Usa Graphviz para visualizarlo.\n");
+  } else {
+    printf("El grafo es grande, no se recomienda usar Graphviz para visualizarlo.\n");
+  }
+
   return 0;
 }
