@@ -54,12 +54,12 @@ void print_grafo(Grafo *g, int num_vertices){
   }
 
   printf("\nMatriz de adyacencia:\n");
-  for(int i = 0; i < num_vertices; i++){
-    for(int j = 0; j < num_vertices; j++){
-      printf("%d ", g->matriz_adyacencia[i][j]);
+    for (int i = 0; i < num_vertices; i++) {
+        for (int j = 0; j < num_vertices; j++) {
+            printf("%5d ", g->matriz_adyacencia[i][j]);
+        }
+        printf("\n");
     }
-    printf("\n");
-  }
 }
 
 int distancia[N_VERTICES];
@@ -162,8 +162,9 @@ int main(){
   int origen = 0;
   dijkstra(&g, origen, N_VERTICES);
 
+  printf("Camino más corto desde el origen %d al nodo %d:\n", origen, 6);
   imprimir_camino(6);
-  printf("Distancia total: %d\n", distancia[6]);
+  printf("\nDistancia total: %d\n", distancia[6]);
 
   exportar_grafo_dot(&g, N_VERTICES, "grafo.dot");
   printf("\nGrafo exportado a 'grafo.dot'. Usa Graphviz para visualizarlo.\n");
