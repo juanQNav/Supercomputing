@@ -299,10 +299,10 @@ int main(int argc, char **argv) {
             return 1;
         }
         if (!file_exists) {
-            fprintf(csv_file, "Nodos,Origen,Destino,Distancia,Tiempo(s),Camino\n");
+            fprintf(csv_file, "Nodos,Procesos,Origen,Destino,Distancia,Tiempo(s),Camino\n");
         }
 
-        fprintf(csv_file, "%d,%d,%d,%d,%.6f,\"", N_VERTICES, origen, destino, distancia[destino], cpu_time_used);
+        fprintf(csv_file, "%d, %d,%d,%d,%d,%.6f,\"", N_VERTICES, numProc,origen, destino, distancia[destino], cpu_time_used);
 
         int camino[N_VERTICES];
         int count = 0;
