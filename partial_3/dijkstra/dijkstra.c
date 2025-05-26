@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <string.h>
 
-#define N_VERTICES 300
+#define N_VERTICES 1000
 #define INF 99999
 #define NAME_LEN 2
 #define MAX_WEIGHT 11
@@ -19,18 +20,15 @@ typedef struct{
   int matriz_adyacencia[N_VERTICES][N_VERTICES];
 }Grafo;
 
-void nombra_vertices(Grafo *g, int num_vertices){
-  for(int i = 0; i < num_vertices; i++){
-    g->vertices[i].id = i;
 
-    for (int j = 0; j < NAME_LEN; j++){
-      g->vertices[i].nombre[j] = '0' + i;
+void label_vertices(Grafo *g, int num_vertices) {
+    for(int i = 0; i < num_vertices; i++) {
+        g->vertices[i].id = i;
+        snprintf(g->vertices[i].nombre, sizeof(g->vertices[i].nombre), "V%d", i);
     }
-    g->vertices[i].nombre[NAME_LEN] = '\0';
-  }
 }
 
-void llena_matriz_a(Grafo *g, int num_vertices){
+void fill_matrix(Grafo *g, int num_vertices){
   srand(SEED);
   for(int i = 0; i < num_vertices; i++){
     for(int j = 0; j < num_vertices; j++){
@@ -43,7 +41,7 @@ void llena_matriz_a(Grafo *g, int num_vertices){
   }
 }
 
-void introduce_matriz(Grafo *g, int num_vertices, int matriz[N_VERTICES][N_VERTICES]){
+void set_adj_matrix(Grafo *g, int num_vertices, int matriz[N_VERTICES][N_VERTICES]){
   for(int i = 0; i < num_vertices; i++){
     for(int j = 0; j < num_vertices; j++){
       g->matriz_adyacencia[i][j] = matriz[i][j];
@@ -66,11 +64,7 @@ void print_grafo(Grafo *g, int num_vertices){
     }
 }
 
-int distancia[N_VERTICES];
-int visitado[N_VERTICES];
-int anterior[N_VERTICES];
-
-void init_dij(int origen, int *d, int *v, int num_vertices){
+void init_dij(int *distancia, int *visitado, int *anterior, int origen, int num_vertices){
    for (int i = 0; i < num_vertices; i++)
   {
     distancia[i] = INF;
@@ -80,19 +74,37 @@ void init_dij(int origen, int *d, int *v, int num_vertices){
   distancia[origen] = 0;
 }
 
-void imprimir_camino(int destino) {
-  if (anterior[destino] == -1) {
-    printf("%d", destino);
-    return;
-  }
+void reconstruct_path(int destino,int *anterior, int *path, int *path_length) {
+    int temp_path[N_VERTICES];
+    int length = 0;
+    int current = destino;
 
-  imprimir_camino(anterior[destino]);
-  printf(" -> %d", destino);
+    while (current != -1) {
+        temp_path[length++] = current;
+        current = anterior[current];
+    }
+
+    *path_length = length;
+    for (int i = 0; i < length; i++) {
+        path[i] = temp_path[length - 1 - i];
+    }
 }
 
+void path_to_string(int *path, int length, char *str) {
+    str[0] = '\0';
+    for (int i = 0; i < length; i++) {
+        char vertex[10];
+        sprintf(vertex, "%d", path[i]);
+        strcat(str, vertex);
+        if (i < length - 1) {
+            strcat(str, " -> ");
+        }
+    }
+}
 
-void dijkstra(Grafo* g, int origen, int num_vertices){
-  init_dij(origen, distancia, visitado, num_vertices);
+void dijkstra(Grafo* g, int origen, int num_vertices, int *distancia, int *anterior) {
+    int visitado[N_VERTICES];
+    init_dij(distancia, visitado, anterior, origen, num_vertices);
 
   for(int i = 0; i < num_vertices -1; i++){
     int u = -1;
@@ -120,6 +132,7 @@ void dijkstra(Grafo* g, int origen, int num_vertices){
     }
   }
  }
+
 void exportar_grafo_dot(Grafo* g, int num_vertices, const char* filename) {
   FILE* file = fopen(filename, "w");
   if (!file) {
@@ -145,76 +158,153 @@ void exportar_grafo_dot(Grafo* g, int num_vertices, const char* filename) {
   fclose(file);
 }
 
+int main(int argc, char **argv) {
+    int num_vertices = N_VERTICES;
+    if (argc > 1) {
+        num_vertices = atoi(argv[1]);
+        if (num_vertices <= 0 || num_vertices > N_VERTICES) {
+            fprintf(stderr, "Número de vértices debe ser entre 1 y %d\n", N_VERTICES);
+            return 1;
+        }
+    }
 
-int main(){
-  Grafo g;
+    Grafo g;
+    clock_t start, end;
+    double cpu_time_used;
 
-  // int m[N_VERTICES][N_VERTICES] = {
-  //   {0, 2, 6, 0, 0, 0, 0}, // 0
-  //   {2, 0, 0, 5, 0, 0, 0}, // 1
-  //   {6, 0, 0, 8, 0, 0, 0}, // 2
-  //   {0, 5, 8, 0, 10, 15, 0}, // 3
-  //   {0, 0, 0, 10, 0, 6, 2}, // 4
-  //   {0, 0, 0, 15, 6, 0, 6}, // 5
-  //   {0, 0, 0, 0, 2, 6, 0}, // 6
-  // };
+    // int m[N_VERTICES][N_VERTICES] = {
+    //     {0, 2, 6, 0, 0, 0, 0},
+    //     {2, 0, 0, 5, 0, 0, 0},
+    //     {6, 0, 0, 8, 0, 0, 0},
+    //     {0, 5, 8, 0, 10, 15, 0},
+    //     {0, 0, 0, 10, 0, 6, 2},
+    //     {0, 0, 0, 15, 6, 0, 6},
+    //     {0, 0, 0, 0, 2, 6, 0}
+    // };
 
-  clock_t start, end;
-  double cpu_time_used;
+    start = clock();
 
-  start = clock();
+    label_vertices(&g, num_vertices);
+    fill_matrix(&g, num_vertices);
+    // set_adj_matrix(&g, num_vertices, m);
+    // print_grafo(&g, num_vertices);
 
-  nombra_vertices(&g, N_VERTICES);
-  llena_matriz_a(&g, N_VERTICES);
-  // introduce_matriz(&g, N_VERTICES, m);
-  print_grafo(&g, N_VERTICES);
+    printf("\nCalculando caminos más cortos desde cada vértice...\n");
 
-  int origen = 0;
-  int destino = 2;
-  dijkstra(&g, origen, N_VERTICES);
+    int **all_distances = (int **)malloc(num_vertices * sizeof(int *));
+    int **all_predecessors = (int **)malloc(num_vertices * sizeof(int *));
 
-  printf("Camino más corto desde el origen %d al nodo %d:\n", origen, destino);
-  imprimir_camino(destino);
-  printf("\nDistancia total: %d\n", distancia[destino]);
+    if (!all_distances || !all_predecessors) {
+        perror("Error asignando memoria");
+        return 1;
+    }
 
-  end = clock();
-  cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    for (int i = 0; i < num_vertices; i++) {
+        all_distances[i] = (int *)malloc(num_vertices * sizeof(int));
+        all_predecessors[i] = (int *)malloc(num_vertices * sizeof(int));
+        if (!all_distances[i] || !all_predecessors[i]) {
+            perror("Error asignando memoria para filas");
+            return 1;
+        }
+    }
 
-  int file_exists = access("resultados.csv", F_OK) == 0;
 
-  FILE *csv_file = fopen("resultados.csv", file_exists ? "a" : "w");
+    for (int origen = 0; origen < num_vertices; origen++) {
+        int distancia[N_VERTICES];
+        int anterior[N_VERTICES];
+        dijkstra(&g, origen, num_vertices, distancia, anterior);
+
+        for (int i = 0; i < num_vertices; i++) {
+            all_distances[origen][i] = distancia[i];
+            all_predecessors[origen][i] = anterior[i];
+        }
+    }
+
+    end = clock();
+    cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
+
+    FILE *paths_file = fopen("shortest_paths_seq.txt", "w");
+    if (paths_file == NULL) {
+        perror("Error opening paths file");
+        return 1;
+    }
+
+    fprintf(paths_file, "CAMINOS MAS CORTOS ENTRE TODOS LOS VERTICES (Secuencial)\n");
+    fprintf(paths_file, "=======================================================\n");
+    fprintf(paths_file, "Número de vértices: %d\n\n", num_vertices);
+
+    for (int src = 0; src < num_vertices; src++) {
+        fprintf(paths_file, "Desde el vértice %d:\n", src);
+        fprintf(paths_file, "-------------------\n");
+
+        for (int dest = 0; dest < num_vertices; dest++) {
+            if (src == dest) {
+                fprintf(paths_file, "  Hacia vértice %d: Distancia = 0, Camino = %d\n", dest, dest);
+            } else if (all_distances[src][dest] == INF) {
+                fprintf(paths_file, "  Hacia vértice %d: No hay camino\n", dest);
+            } else {
+                int path[N_VERTICES];
+                int path_length;
+                reconstruct_path(dest, all_predecessors[src], path, &path_length);
+
+                char path_str[1000];
+                path_to_string(path, path_length, path_str);
+
+                fprintf(paths_file, "  Hacia vértice %d: Distancia = %d, Camino = %s\n",
+                        dest, all_distances[src][dest], path_str);
+            }
+        }
+        fprintf(paths_file, "\n");
+    }
+
+    fclose(paths_file);
+
+    FILE *distances_csv = fopen("all_distances_seq.csv", "w");
+    if (distances_csv != NULL) {
+        fprintf(distances_csv, "Source\\Destination");
+        for (int j = 0; j < num_vertices; j++) {
+            fprintf(distances_csv, ",V%d", j);
+        }
+        fprintf(distances_csv, "\n");
+
+        for (int i = 0; i < num_vertices; i++) {
+            fprintf(distances_csv, "V%d", i);
+            for (int j = 0; j < num_vertices; j++) {
+                if (all_distances[i][j] == INF) {
+                    fprintf(distances_csv, ",INF");
+                } else {
+                    fprintf(distances_csv, ",%d", all_distances[i][j]);
+                }
+            }
+            fprintf(distances_csv, "\n");
+        }
+        fclose(distances_csv);
+    }
+
+    int file_exists = access("sequential_results.csv", F_OK) == 0;
+    FILE *csv_file = fopen("sequential_results.csv", file_exists ? "a" : "w");
     if (csv_file == NULL) {
-        perror("Error al abrir el archivo CSV");
+        perror("Error opening CSV file");
         return 1;
     }
 
     if (!file_exists) {
-        fprintf(csv_file, "Nodos,Origen,Destino,Distancia,Tiempo(s),Camino\n");
+        fprintf(csv_file, "Nodes,Time(s),Algorithm\n");
     }
 
-  fprintf(csv_file, "%d,%d,%d,%d,%.6f,\"", N_VERTICES, origen, destino, distancia[destino], cpu_time_used);
+    fprintf(csv_file, "%d,%.6f,Dijkstra_All_Pairs_Sequential\n", num_vertices, cpu_time_used);
+    fclose(csv_file);
 
-  int camino[N_VERTICES];
-  int count = 0;
-  for (int i = destino; i != -1; i = anterior[i]) {
-    camino[count++] = i;
-  }
-  for (int i = count - 1; i >= 0; i--) {
-    fprintf(csv_file, "%d", camino[i]);
-    if (i > 0) fprintf(csv_file, " -> ");
-  }
+    printf("\nProcesamiento completado!\n");
+    printf("Tiempo total: %.6f segundos\n", cpu_time_used);
+    printf("Archivos generados:\n");
+    printf("  - shortest_paths_seq.txt: Todos los caminos más cortos\n");
+    printf("  - all_distances_seq.csv: Matriz de distancias\n");
+    printf("  - sequential_results.csv: Métricas de rendimiento\n");
 
-  fprintf(csv_file, "\"\n");
-  fclose(csv_file);
+    if (num_vertices <= 20) {
+        exportar_grafo_dot(&g, num_vertices, "grafo_seq.dot");
+    }
 
-  printf("\nResultados exportados a 'resultados.csv'\n");
-
-  if (N_VERTICES < 10) {
-    exportar_grafo_dot(&g, N_VERTICES, "grafo.dot");
-    printf("\nGrafo exportado a 'grafo.dot'. Usa Graphviz para visualizarlo.\n");
-  } else {
-    printf("El grafo es grande, no se recomienda usar Graphviz para visualizarlo.\n");
-  }
-
-  return 0;
+    return 0;
 }
