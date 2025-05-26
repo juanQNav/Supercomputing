@@ -1,3 +1,17 @@
+/*
+-Materia: Supercomputo
+-Semestre: 8 (2024-2025/II)
+-Nombre del alumno 1: Luis Angel Sanchez Muñiz
+-Clave del alumno 1: 337911
+-Nombre del alumno 2: Quistian Navarro Juan Luis
+-Clave del alumno 2: 341807
+-Carrera: Ing. en Sistemas Inteligentes
+-Nombre de tarea o programa: Algoritmo Dijkstra Secuencial
+-Periodo de evaluación (parcial 1, 2, 3, 4 o 5): 3
+-Descripción: Implementación del algoritmo de Dijkstra para encontrar el camino más corto
+-Avance logrado (0 a 100%): 100%
+-Comentarios adicionales: Encuentra caminos más cortos desde cada vértice a todos los vértices
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
